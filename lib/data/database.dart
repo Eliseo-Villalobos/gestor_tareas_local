@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:path_provider/path_provider.dart';
 
 import '../models/tarea.dart';
 
@@ -32,8 +34,31 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 1;
 
   /// drift_flutter elige la ubicación del archivo según la plataforma.
+  /// En web usa SQLite compilado a WebAssembly: sqlite3.wasm y
+  /// drift_worker.js están en web/ y vienen de la release drift-2.35.4
+  /// (la misma versión que fija pubspec.lock).
   static QueryExecutor _abrirConexion() {
-    return driftDatabase(name: 'gestor_tareas');
+    return driftDatabase(
+      name: 'gestor_tareas',
+      // Por defecto drift_flutter usa la carpeta Documentos, que en esta PC
+      // está sincronizada con OneDrive. La carpeta de soporte de la app
+      // (AppData en Windows) no se sincroniza ni la ve el usuario.
+      native: const DriftNativeOptions(
+        databaseDirectory: getApplicationSupportDirectory,
+      ),
+      web: DriftWebOptions(
+        sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+        driftWorker: Uri.parse('drift_worker.js'),
+        // Informa en consola qué almacenamiento eligió el navegador
+        // (OPFS o IndexedDB) y qué funciones faltan.
+        onResult: (resultado) {
+          debugPrint(
+            'Drift web: ${resultado.chosenImplementation} '
+            '(faltan: ${resultado.missingFeatures})',
+          );
+        },
+      ),
+    );
   }
 
   /// SELECT * FROM tareas ORDER BY id, como Stream:

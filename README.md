@@ -55,10 +55,50 @@ flutter run -d chrome --web-port 5000                      # web (puerto FIJO)
 > En web el almacenamiento depende del **origen** (`http://localhost:5000`).
 > Sin puerto fijo, cada ejecución usa otro origen y los datos parecen perdidos.
 
+## Configuración web
+
+SQLite está escrito en C y el navegador no puede ejecutarlo directamente, por eso
+Drift usa SQLite compilado a **WebAssembly**. En `web/` están:
+
+| Archivo | Origen |
+|---|---|
+| `web/sqlite3.wasm` | release [`drift-2.35.4`](https://github.com/simolus3/drift/releases/tag/drift-2.35.4) |
+| `web/drift_worker.js` | misma release |
+
+Deben coincidir con la versión de `drift` en `pubspec.lock` (2.35.4). Si se
+actualiza drift, hay que volver a descargar ambos archivos de la release nueva.
+
+## Dónde se guarda la base
+
+| Plataforma | Ubicación |
+|---|---|
+| Windows | `%APPDATA%\com.example\gestor_tareas_local\gestor_tareas.sqlite` (`getApplicationSupportDirectory`) |
+| Android / iOS / macOS / Linux | carpeta de soporte privada de la app (`getApplicationSupportDirectory`) |
+| Web | almacenamiento del navegador para el origen (OPFS o IndexedDB, según el navegador) |
+
+> En web los datos se pierden en modo incógnito al cerrar la ventana y al
+> borrar los datos del sitio. Desinstalar la app en móvil también borra la base.
+
+## Pruebas automatizadas
+
+```powershell
+flutter test
+```
+
+| Archivo | Qué cubre |
+|---|---|
+| `test/widget_test.dart` | La pantalla abre sin errores (con base en memoria). |
+| `test/validacion_test.dart` | `normalizarTitulo`: rechaza vacío y solo espacios/tabs/saltos; recorta extremos; conserva espacios internos. |
+| `test/database_test.dart` | Con SQLite en memoria: ids únicos al insertar y estado inicial pendiente; editar título y estado cambia solo esa fila; eliminar por id (y 0 filas con id inexistente); la tabla rechaza un título vacío. |
+
 ## Estado
 
 - [x] Etapa 0: proyecto base creado con `flutter create`
 - [x] Etapa 1: tecnología elegida y diseño de la tabla (este README)
 - [x] Etapa 2: persistencia real (crear y consultar)
 - [x] Etapa 3: editar, cambiar estado, eliminar y validación
-- [ ] Etapa 4: web configurada, pruebas automatizadas y resultados
+- [x] Etapa 4: web configurada, pruebas automatizadas y resultados
+
+Verificado (P1–P6): Windows (escritorio), Chrome (web) y Android físico
+(Samsung SM-S721B, Android 16). iOS, macOS y Linux: previstos por el diseño
+(mismo código con drift_flutter), **no probados** (requieren Mac o Linux).
