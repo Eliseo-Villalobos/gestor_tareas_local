@@ -39,13 +39,19 @@ interfaz automáticamente después de cada escritura.
 
 ```powershell
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs   # genera *.g.dart
+dart run build_runner build                                # regenera *.g.dart (solo si cambias la tabla)
 flutter analyze
 flutter test
 flutter run -d windows                                     # escritorio
 flutter run -d chrome --web-port 5000                      # web (puerto FIJO)
 ```
 
+> En Windows hay que activar el **Modo de desarrollador** (`start ms-settings:developers`):
+> Flutter necesita enlaces simbólicos para compilar con plugins.
+>
+> `lib/data/database.g.dart` se incluye en el repositorio para que el proyecto
+> compile justo después de `git clone`.
+>
 > En web el almacenamiento depende del **origen** (`http://localhost:5000`).
 > Sin puerto fijo, cada ejecución usa otro origen y los datos parecen perdidos.
 
