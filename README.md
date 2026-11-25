@@ -59,6 +59,6 @@ flutter run -d chrome --web-port 5000                      # web (puerto FIJO)
 
 - [x] Etapa 0: proyecto base creado con `flutter create`
 - [x] Etapa 1: tecnología elegida y diseño de la tabla (este README)
-- [ ] Etapa 2: persistencia real (crear y consultar)
-- [ ] Etapa 3: editar, cambiar estado, eliminar y validación
+- [x] Etapa 2: persistencia real (crear y consultar)
+- [x] Etapa 3: editar, cambiar estado, eliminar y validación
 - [ ] Etapa 4: web configurada, pruebas automatizadas y resultados

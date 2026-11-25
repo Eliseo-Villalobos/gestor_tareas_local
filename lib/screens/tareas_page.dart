@@ -4,8 +4,7 @@ import '../data/database.dart';
 import '../data/validacion.dart';
 import '../models/tarea.dart';
 
-// Pantalla principal. Alta y consulta con SQLite (Drift).
-// TODO(Etapa 3): editar, cambiar estado y eliminar.
+// Pantalla principal: CRUD de tareas sobre SQLite (Drift).
 class TareasPage extends StatefulWidget {
   final AppDatabase database;
 
@@ -43,19 +42,61 @@ class _TareasPageState extends State<TareasPage> {
     }
   }
 
-  void _alternarCompletada(Tarea tarea, bool completada) {
-    _pendiente('Implementar actualización de tarea');
+  Future<void> _alternarCompletada(Tarea tarea, bool completada) async {
+    try {
+      final filas = await widget.database.cambiarEstado(tarea.id, completada);
+      if (filas == 0) _mostrarMensaje('La tarea ya no existe');
+    } catch (e) {
+      _mostrarMensaje('No se pudo actualizar el estado: $e');
+    }
   }
 
-  void _editarTarea(Tarea tarea) {
-    _pendiente('Implementar edición de título');
+  Future<void> _editarTarea(Tarea tarea) async {
+    final nuevoTitulo = await showDialog<String>(
+      context: context,
+      builder: (_) => _EditarTareaDialog(tituloActual: tarea.titulo),
+    );
+    // null = el usuario canceló, o el título no cambió.
+    if (nuevoTitulo == null || nuevoTitulo == tarea.titulo) return;
+    try {
+      final filas = await widget.database.actualizarTitulo(
+        tarea.id,
+        nuevoTitulo,
+      );
+      _mostrarMensaje(
+        filas == 0 ? 'La tarea ya no existe' : 'Título actualizado',
+      );
+    } catch (e) {
+      _mostrarMensaje('No se pudo editar la tarea: $e');
+    }
   }
 
-  void _eliminarTarea(Tarea tarea) {
-    _pendiente('Implementar eliminación de tarea');
+  Future<void> _eliminarTarea(Tarea tarea) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar tarea'),
+        content: Text('¿Eliminar "${tarea.titulo}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+    try {
+      final filas = await widget.database.eliminarTarea(tarea.id);
+      _mostrarMensaje(filas == 0 ? 'La tarea ya no existe' : 'Tarea eliminada');
+    } catch (e) {
+      _mostrarMensaje('No se pudo eliminar la tarea: $e');
+    }
   }
-
-  void _pendiente(String mensaje) => _mostrarMensaje(mensaje);
 
   void _mostrarMensaje(String mensaje) {
     if (!mounted) return;
@@ -153,6 +194,60 @@ class _TareasPageState extends State<TareasPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Diálogo para editar el título. Es un StatefulWidget para poder
+/// liberar su TextEditingController en dispose() y mostrar el error
+/// de validación debajo del campo.
+class _EditarTareaDialog extends StatefulWidget {
+  final String tituloActual;
+
+  const _EditarTareaDialog({required this.tituloActual});
+
+  @override
+  State<_EditarTareaDialog> createState() => _EditarTareaDialogState();
+}
+
+class _EditarTareaDialogState extends State<_EditarTareaDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.tituloActual,
+  );
+  String? _error;
+
+  void _guardar() {
+    final titulo = normalizarTitulo(_controller.text);
+    if (titulo == null) {
+      setState(() => _error = 'El título no puede estar vacío');
+      return;
+    }
+    Navigator.pop(context, titulo);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Editar tarea'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: InputDecoration(labelText: 'Título', errorText: _error),
+        onSubmitted: (_) => _guardar(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(onPressed: _guardar, child: const Text('Guardar')),
+      ],
     );
   }
 }

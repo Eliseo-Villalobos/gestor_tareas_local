@@ -46,4 +46,23 @@ class AppDatabase extends _$AppDatabase {
   Future<int> insertarTarea(String titulo) {
     return into(tareas).insert(TareasCompanion.insert(titulo: titulo));
   }
+
+  /// UPDATE tareas SET titulo = ? WHERE id = ?. Devuelve filas afectadas.
+  Future<int> actualizarTitulo(int id, String titulo) {
+    return (update(tareas)..where((t) => t.id.equals(id))).write(
+      TareasCompanion(titulo: Value(titulo)),
+    );
+  }
+
+  /// UPDATE tareas SET completada = ? WHERE id = ?. Devuelve filas afectadas.
+  Future<int> cambiarEstado(int id, bool completada) {
+    return (update(tareas)..where((t) => t.id.equals(id))).write(
+      TareasCompanion(completada: Value(completada)),
+    );
+  }
+
+  /// DELETE FROM tareas WHERE id = ?. Devuelve filas borradas.
+  Future<int> eliminarTarea(int id) {
+    return (delete(tareas)..where((t) => t.id.equals(id))).go();
+  }
 }
