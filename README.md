@@ -1,50 +1,58 @@
-# Práctica - Gestor de tareas SQLite multiplataforma
+# Gestor de tareas local (Flutter + SQLite con Drift)
 
-**Código base deliberadamente incompleto.** Su objetivo es ofrecer una pantalla Flutter que se pueda ejecutar desde el primer momento; **NO implementa SQLite, CRUD ni persistencia**.
+Práctica de Programación de Dispositivos Móviles (UAA, 7.º semestre).
+App Flutter que administra tareas en una base **SQLite local**: sin servidor,
+sin MySQL y sin internet. Los datos se conservan al cerrar y volver a abrir la app.
 
-## Preparación
+## Tecnología elegida y por qué
 
-1. Instala Flutter y comprueba `flutter doctor -v`.
-2. Crea un proyecto nuevo **con este nombre**, para que coincida el `package:` usado en la prueba inicial:
+| Paquete | Uso |
+|---|---|
+| `drift` | ORM/consultas tipadas sobre SQLite. Define la tabla en Dart y genera el código. |
+| `drift_flutter` | Abre la base en la ubicación correcta de cada plataforma con una sola llamada (`driftDatabase`). |
+| `drift_dev` + `build_runner` (dev) | Generan el archivo `*.g.dart` a partir de la definición de la tabla. |
 
-   ```bash
-   flutter create gestor_tareas_local
-   cd gestor_tareas_local
-   ```
+**Por qué Drift y no `sqflite`:** `sqflite` solo funciona en Android/iOS/macOS;
+en Windows/Linux necesita `sqflite_common_ffi` y en web no tiene soporte oficial.
+Drift usa el mismo código en **móvil, escritorio y web** (en web corre SQLite
+compilado a WebAssembly), lo que cumple el requisito de un solo proyecto para
+los tres entornos. Además ofrece consultas `watch()` (Stream) que actualizan la
+interfaz automáticamente después de cada escritura.
 
-3. Copia al proyecto generado las carpetas `lib/` y `test/` de esta base. No sobrescribas las carpetas `android/`, `ios/`, `web/`, `windows/`, `linux/` ni `macos/` generadas por Flutter.
-4. Ejecuta:
+## Diseño de la tabla `tareas`
 
-   ```bash
-   flutter pub get
-   flutter analyze
-   flutter test
-   flutter run -d chrome
-   ```
+| Columna | Tipo en Dart (Drift) | Tipo en SQLite | Restricciones |
+|---|---|---|---|
+| `id` | `IntColumn` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |
+| `titulo` | `TextColumn` | `TEXT` | `NOT NULL`, longitud 1–200 |
+| `completada` | `BoolColumn` | `INTEGER` (0/1) | `NOT NULL`, `DEFAULT 0`, `CHECK (completada IN (0, 1))` |
 
-   Sustituye `chrome` por otro identificador de `flutter devices` si lo necesitas.
+- **Identificación de cada registro:** `id` lo asigna SQLite al insertar
+  (autoincremental); nunca lo pone la app. Editar, cambiar estado y eliminar
+  se hacen por `id` (`WHERE id = ?`).
+- **Booleano:** SQLite no tiene tipo `BOOLEAN`; Drift lo guarda como `INTEGER`
+  0/1 y lo convierte a `bool` en Dart.
+- **Validación del título:** se aplica `trim()` y se rechazan títulos vacíos
+  antes de llegar a la base.
 
-## Tarea por realizar
+## Cómo ejecutar
 
-- Persistencia SQLite real en Android, iOS, Windows, Linux, macOS y web.
-- Agregar, listar, editar título, marcar completada y eliminar tareas.
-- Comprobar que la información persiste después de cerrar/abrir la app y, en web, después de recargar/cerrar la pestaña en un mismo origen y perfil.
-- Investigar Drift + drift_flutter para compartir una sola base de código entre plataformas.
-- Investigar cómo agregar `sqlite3.wasm` y `drift_worker.dart.js` en `web/` para que la base funcione en el navegador.
-- Añadir pruebas significativas y documentar las plataformas verificadas.
+```powershell
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs   # genera *.g.dart
+flutter analyze
+flutter test
+flutter run -d windows                                     # escritorio
+flutter run -d chrome --web-port 5000                      # web (puerto FIJO)
+```
 
-Consulta la consigna PDF/LaTeX: contiene pasos de investigación, criterios, evidencias y rúbrica.
+> En web el almacenamiento depende del **origen** (`http://localhost:5000`).
+> Sin puerto fijo, cada ejecución usa otro origen y los datos parecen perdidos.
 
-## Notas
+## Estado
 
-- **No uses una base MySQL ni API REST:** esta práctica es de almacenamiento **local**.
-- **No se acepta una lista solo en memoria** ni guardar la lista como JSON en `shared_preferences` en lugar de SQLite.
-- Los datos de cada instalación/plataforma son propios; no se exige sincronización entre dispositivos.
-- iOS y macOS requieren una Mac para compilarse/probarse; Windows requiere Windows para compilarse y Linux, Linux. La compatibilidad del código sí debe contemplar las seis plataformas.
-
-### Referencias recomendadas
-
-- https://drift.simonbinder.eu/
-- https://drift.simonbinder.eu/platforms/web/
-- https://pub.dev/packages/drift_flutter
-- https://docs.flutter.dev/data-and-backend/persistence/sqlite
+- [x] Etapa 0: proyecto base creado con `flutter create`
+- [x] Etapa 1: tecnología elegida y diseño de la tabla (este README)
+- [ ] Etapa 2: persistencia real (crear y consultar)
+- [ ] Etapa 3: editar, cambiar estado, eliminar y validación
+- [ ] Etapa 4: web configurada, pruebas automatizadas y resultados
