@@ -79,6 +79,24 @@ actualiza drift, hay que volver a descargar ambos archivos de la release nueva.
 > En web los datos se pierden en modo incógnito al cerrar la ventana y al
 > borrar los datos del sitio. Desinstalar la app en móvil también borra la base.
 
+## Pruebas manuales (P1–P6)
+
+"Reiniciar" significa **detener la app y volver a ejecutarla** (o cerrarla y
+abrirla desde su ícono). El hot reload **no** comprueba la persistencia, porque
+no vuelve a abrir la base.
+
+| ID | Pasos | Resultado esperado |
+|---|---|---|
+| P1 | Agregar tres tareas, cerrar la app por completo y abrirla de nuevo. | Permanecen las tres. |
+| P2 | Marcar una como completada (checkbox) y reiniciar. | Se conserva el estado. |
+| P3 | Editar el título (ícono de lápiz) y reiniciar. | Aparece el nuevo título. |
+| P4 | Eliminar una tarea (ícono de basura → Eliminar) y reiniciar. | No reaparece. |
+| P5 | Intentar agregar un título vacío o de solo espacios. | No se registra y aparece "El título no puede estar vacío". |
+| P6 | `flutter run -d chrome --web-port 5000`, agregar tareas, recargar (F5) y cerrar/abrir la pestaña en `http://localhost:5000` con el mismo perfil. | Los datos permanecen. |
+
+Resultados: P1–P5 pasan en Windows y Android (Samsung SM-S721B, Android 16);
+P6 pasa en Chrome. Detalle en `NOTAS_REPORTE.md`.
+
 ## Pruebas automatizadas
 
 ```powershell
